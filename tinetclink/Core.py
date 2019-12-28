@@ -34,7 +34,8 @@ class Core:
         for k, v in cpkwargs.items():
             if not v:
                 kwargs.pop(k)
-        senddata.update(kwargs)
+        if method == 'GET':
+            senddata.update(kwargs)
         senddata.update({
             "Timestamp": datetime.datetime.now().replace(microsecond=0).isoformat() + 'Z'
         })
@@ -43,12 +44,14 @@ class Core:
         args = dict(sorted(senddata.items()))
         singatxt = method + self.server_name + '/' + apiname + '?' + urlencode(args)
         signature = self._hmac_sha1(singatxt)
-        args.update({"Signature": signature})
+        args.update({"Signature": signature.decode()})
 
         if method == 'GET':
             req = requests.get(self.http_head + self.server_name + "/" + apiname, params=args)
         elif method == 'POST':
-            req = requests.post(self.http_head + self.server_name + "/" + apiname, data=args)
+            req = requests.post(self.http_head + self.server_name + "/" + apiname,  params=args,
+                                json=kwargs)
+
         else:
             raise Exception("methods Error")
         return req.json()
@@ -58,3 +61,4 @@ class Core:
         encrypts = objhmac.digest()
         signature = base64.b64encode(encrypts)
         return signature
+
